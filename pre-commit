@@ -1,0 +1,24 @@
+#!/bin/bash
+esc=$(printf '\033')
+AUTOTEST="\033[0;34m[git-autotest]\033[0m"
+echo -e "${AUTOTEST} Running pre-commit tests..."
+echo ""
+
+CWD=`pwd`
+MAIN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd $MAIN_DIR/../../
+
+mvn -Dsurefire.skipAfterFailureCount=1 -q test \
+ | egrep --color=always "Tests run|Failures\:|\[ERROR\]\s*[A-Za-z0-9]+\.[A-Za-z0-9]+:[0-9]+\s*" \
+ | sed "s/\[ERROR\]/    ${esc}[0;34m[mvn test]${esc}[0m ${esc}[0;31m[ERROR]${esc}[0m/g"
+
+if [ ${PIPESTATUS[0]} -ne 0 ]; then
+  echo ""
+  echo -e "${AUTOTEST} \033[0;31m[ABORT]\033[0m There are test failures."
+  cd $CWD
+  exit 1
+fi
+
+echo -e "${AUTOTEST} \033[0;32m[OK]\033[0m All tests."
+
+cd $CWD
