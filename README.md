@@ -1,7 +1,7 @@
 # precommit-mvntest
-This is a git pre-commit hook that invokes mvn test.
+This is a git pre-commit hook that invokes mvn test.  If tests fail, the commit is rejected.
 
-If tests fail, the commit will be rejected.
+I built this because sometimes I switch tasks, and commit unfinished changes.  Sometimes those changes cause test failures.  It's better to fix them now when everything is fresh, then have to dig back in later.
 
 # example output:
 ```
@@ -26,3 +26,6 @@ $ git commit -m "testing"
 
 [git-autotest] [ABORT] There are test failures.
 ```
+
+# Credits
+This script was based on https://gist.github.com/arnobroekhof/9454645
