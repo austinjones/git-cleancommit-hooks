@@ -1,9 +1,12 @@
 #!/bin/bash
 # Removes any local branches which have been merged or cherry-picked to master
 # Local branches with unmerged commits are not removed
+
 autobranch="\033[0;34m[git-autobranch]\033[0m"
+
+current_branch=$(git rev-parse --abbrev-ref HEAD);
 branches=$(git for-each-ref refs/heads/ "--format=%(refname:short)" | while read branch; do
-    if [[ "$branch" == "master" ]] || [[ "$branch" == "develop" ]]; then
+    if [[ "$branch" == "master" ]] || [[ "$branch" == "develop" ]] || [[ "$branch" == "$current_branch" ]]; then
       continue;
     fi
 
@@ -21,19 +24,18 @@ branches=$(git for-each-ref refs/heads/ "--format=%(refname:short)" | while read
     fi
 done | sort);
 
-echo "${branches}"
-
-branchlen=$(echo "$branches" | wc -l)
-if [ ${branchlen} -gt 0 ]; then
-  echo -e "${autobranch} stale branches have been detected"
+if [[ ! -z "${branches}" ]]; then
+  echo -e "${autobranch} Stale branches have been detected: "
+  echo "${branches}"
   echo -e -n "${autobranch} "
-  read -p "delete all? (Y/n) " -n 1 -r
+  exec < /dev/tty
+  read -p "Delete all? (Y/n) " -n 1 -r
   echo ""
   if [[ $REPLY  =~ ^[Yy]$ ]]; then
     echo -e "${branches}" | while read branchLine; do
       branch=$(echo "${branchLine}" | cut -f 2)
-      git branch --delete --force "${branch}"
-      echo -e "${autobranch} removed ${branch}"
+      esc=$(printf '\033')
+      git branch --delete --force "${branch}" | sed "s/^/${esc}[0;34m[git-autobranch]${esc}[0m /;"
     done
   fi
 fi
