@@ -1,0 +1,39 @@
+#!/bin/bash
+# Removes any local branches which have been merged or cherry-picked to master
+# Local branches with unmerged commits are not removed
+autobranch="\033[0;34m[git-autobranch]\033[0m"
+branches=$(git for-each-ref refs/heads/ "--format=%(refname:short)" | while read branch; do
+    if [[ "$branch" == "master" ]] || [[ "$branch" == "develop" ]]; then
+      continue;
+    fi
+
+    commit=$(git rev-parse --short $branch)
+    if [[ $(git merge-base master $branch) == $(git rev-parse $branch) ]]; then
+      echo -e "${autobranch}   merged $commit\t$branch"
+      continue;
+    fi
+
+    mergeBase=$(git merge-base master $branch);
+    if [[ $(git cherry master $(git commit-tree $(git rev-parse $branch\^{tree}) -p $mergeBase -m _)) == "-"* ]] \
+       || [[ $(git merge-base master $branch) == $(git rev-parse $branch) ]]; then
+       echo -e "${autobranch} squashed $commit\t$branch"
+       continue;
+    fi
+done | sort);
+
+echo "${branches}"
+
+branchlen=$(echo "$branches" | wc -l)
+if [ ${branchlen} -gt 0 ]; then
+  echo -e "${autobranch} stale branches have been detected"
+  echo -e -n "${autobranch} "
+  read -p "delete all? (Y/n) " -n 1 -r
+  echo ""
+  if [[ $REPLY  =~ ^[Yy]$ ]]; then
+    echo -e "${branches}" | while read branchLine; do
+      branch=$(echo "${branchLine}" | cut -f 2)
+      git branch --delete --force "${branch}"
+      echo -e "${autobranch} removed ${branch}"
+    done
+  fi
+fi
