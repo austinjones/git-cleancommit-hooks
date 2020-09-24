@@ -3,6 +3,11 @@
 # Local branches with unmerged commits are not removed
 
 autobranch="\033[0;34m[git-autobranch]\033[0m"
+if [ `git branch --remote --list origin/develop` ]; then
+  base='develop'
+else
+  base='master'
+fi
 
 current_branch=$(git rev-parse --abbrev-ref HEAD);
 branches=$(git for-each-ref refs/heads/ "--format=%(refname:short)" | while read branch; do
@@ -11,14 +16,14 @@ branches=$(git for-each-ref refs/heads/ "--format=%(refname:short)" | while read
     fi
 
     commit=$(git rev-parse --short $branch)
-    if [[ $(git merge-base master $branch) == $(git rev-parse $branch) ]]; then
+    if [[ $(git merge-base $base $branch) == $(git rev-parse $branch) ]]; then
       echo -e "${autobranch}   merged $commit\t$branch"
       continue;
     fi
 
-    mergeBase=$(git merge-base master $branch);
-    if [[ $(git cherry master $(git commit-tree $(git rev-parse $branch\^{tree}) -p $mergeBase -m _)) == "-"* ]] \
-       || [[ $(git merge-base master $branch) == $(git rev-parse $branch) ]]; then
+    mergeBase=$(git merge-base $base $branch);
+    if [[ $(git cherry $base $(git commit-tree $(git rev-parse $branch\^{tree}) -p $mergeBase -m _)) == "-"* ]] \
+       || [[ $(git merge-base $base $branch) == $(git rev-parse $branch) ]]; then
        echo -e "${autobranch} squashed $commit\t$branch"
        continue;
     fi
