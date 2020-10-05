@@ -5,6 +5,8 @@
 autobranch="\033[0;34m[git-autobranch]\033[0m"
 if [ `git branch --remote --list origin/develop` ]; then
   base='develop'
+elif [ `git branch --remote --list origin/main` ]; then
+  base='main'
 else
   base='master'
 fi
