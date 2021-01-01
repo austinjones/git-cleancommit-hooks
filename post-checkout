@@ -13,7 +13,7 @@ fi
 
 current_branch=$(git rev-parse --abbrev-ref HEAD);
 branches=$(git for-each-ref refs/heads/ "--format=%(refname:short)" | while read branch; do
-    if [[ "$branch" == "master" ]] || [[ "$branch" == "develop" ]] || [[ "$branch" == "$current_branch" ]]; then
+    if [[ "$branch" == "master" ]] || [[ "$branch" == "main" ]] || [[ "$branch" == "develop" ]] || [[ "$branch" == "$current_branch" ]]; then
       continue;
     fi
 
