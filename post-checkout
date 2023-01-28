@@ -48,8 +48,9 @@ if [[ ! -z "${branches}" ]]; then
   echo ""
   if [[ $REPLY  =~ ^[Yy]$ ]]; then
     echo -e "${branches}" | while read branchLine; do
-      echo "`date -u +\"%Y-%m-%dT%H:%M:%S%z\"`  ${branchLine}" >> $log_file
+      reason=$(echo "${branchLine}" | cut -f 1)
       branch=$(echo "${branchLine}" | cut -f 2)
+      echo -e "`date -u +\"%Y-%m-%dT%H:%M:%S%z\"`\t${reason}\t${branch}" >> $log_file
       esc=$(printf '\033')
       git branch --delete --force "${branch}" | sed "s/^/${esc}[0;34m[git-autobranch]${esc}[0m /;"
     done
