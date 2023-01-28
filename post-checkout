@@ -3,30 +3,46 @@
 # Local branches with unmerged commits are not removed
 
 autobranch="\033[0;34m[git-autobranch]\033[0m"
+if [ `git branch --remote --list origin/develop` ]; then
+  base='develop'
+elif [ `git branch --remote --list origin/main` ]; then
+  base='main'
+else
+  base='master'
+fi
 
 current_branch=$(git rev-parse --abbrev-ref HEAD);
+log_file="`git rev-parse --show-toplevel`/.autobranch-log"
+
 branches=$(git for-each-ref refs/heads/ "--format=%(refname:short)" | while read branch; do
-    if [[ "$branch" == "master" ]] || [[ "$branch" == "develop" ]] || [[ "$branch" == "$current_branch" ]]; then
+    if [[ "$branch" == "master" ]] || [[ "$branch" == "main" ]] || [[ "$branch" == "develop" ]] || [[ "$branch" == "$current_branch" ]]; then
       continue;
     fi
 
     commit=$(git rev-parse --short $branch)
-    if [[ $(git merge-base master $branch) == $(git rev-parse $branch) ]]; then
-      echo -e "${autobranch}   merged $commit\t$branch"
+    if [[ $(git merge-base $base $branch) == $(git rev-parse $branch) ]]; then
+      echo -e "merged $commit $branch"
       continue;
     fi
 
-    mergeBase=$(git merge-base master $branch);
-    if [[ $(git cherry master $(git commit-tree $(git rev-parse $branch\^{tree}) -p $mergeBase -m _)) == "-"* ]] \
-       || [[ $(git merge-base master $branch) == $(git rev-parse $branch) ]]; then
-       echo -e "${autobranch} squashed $commit\t$branch"
+    if [[ $(git log --pretty=oneline --since "6 weeks ago" $branch | wc -l) -eq 0 ]]; then
+      echo -e "stale  $commit $branch"
+      continue;
+    fi
+
+    mergeBase=$(git merge-base $base $branch);
+    if [[ $(git cherry $base $(git commit-tree $(git rev-parse $branch\^{tree}) -p $mergeBase -m _)) == "-"* ]] \
+       || [[ $(git merge-base $base $branch) == $(git rev-parse $branch) ]]; then
+       echo -e "squash $commit $branch"
        continue;
     fi
 done | sort);
 
 if [[ ! -z "${branches}" ]]; then
   echo -e "${autobranch} Stale branches have been detected: "
-  echo "${branches}"
+  echo -e "${branches}" | while read branchLine; do
+    echo -e "${autobranch} ${branchLine}"
+  done
   echo -e -n "${autobranch} "
   exec < /dev/tty
   read -t 1 -n 10000 discard
@@ -34,7 +50,10 @@ if [[ ! -z "${branches}" ]]; then
   echo ""
   if [[ $REPLY  =~ ^[Yy]$ ]]; then
     echo -e "${branches}" | while read branchLine; do
-      branch=$(echo "${branchLine}" | cut -f 2)
+      reason=$(echo "${branchLine}" | tr -s ' ' | cut -d ' ' -f 1)
+      commit=$(echo "${branchLine}" | tr -s ' ' | cut -d ' ' -f 2)
+      branch=$(echo "${branchLine}" | tr -s ' ' | cut -d ' ' -f 3)
+      echo -e "`date -u +\"%Y-%m-%dT%H:%M:%S%z\"`\t${reason}\t${commit}\t${branch}" >> $log_file
       esc=$(printf '\033')
       git branch --delete --force "${branch}" | sed "s/^/${esc}[0;34m[git-autobranch]${esc}[0m /;"
     done
