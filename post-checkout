@@ -21,19 +21,19 @@ branches=$(git for-each-ref refs/heads/ "--format=%(refname:short)" | while read
 
     commit=$(git rev-parse --short $branch)
     if [[ $(git merge-base $base $branch) == $(git rev-parse $branch) ]]; then
-      echo -e "${autobranch}   merged $commit\t$branch"
+      echo -e "${autobranch}\tmerged $commit\t$branch"
       continue;
     fi
 
     if [[ $(git log --pretty=oneline --since "6 weeks ago" $branch | wc -l) -eq 0 ]]; then
-      echo -e "${autobranch}     stale $commit\t$branch"
+      echo -e "${autobranch}\tstale $commit\t$branch"
       continue;
     fi
 
     mergeBase=$(git merge-base $base $branch);
     if [[ $(git cherry $base $(git commit-tree $(git rev-parse $branch\^{tree}) -p $mergeBase -m _)) == "-"* ]] \
        || [[ $(git merge-base $base $branch) == $(git rev-parse $branch) ]]; then
-       echo -e "${autobranch} squashed $commit\t$branch"
+       echo -e "${autobranch}\tsquashed $commit\t$branch"
        continue;
     fi
 done | sort);
@@ -48,8 +48,8 @@ if [[ ! -z "${branches}" ]]; then
   echo ""
   if [[ $REPLY  =~ ^[Yy]$ ]]; then
     echo -e "${branches}" | while read branchLine; do
-      reason=$(echo "${branchLine}" | cut -f 1)
-      branch=$(echo "${branchLine}" | cut -f 2)
+      reason=$(echo "${branchLine}" | cut -f 2)
+      branch=$(echo "${branchLine}" | cut -f 3)
       echo -e "`date -u +\"%Y-%m-%dT%H:%M:%S%z\"`\t${reason}\t${branch}" >> $log_file
       esc=$(printf '\033')
       git branch --delete --force "${branch}" | sed "s/^/${esc}[0;34m[git-autobranch]${esc}[0m /;"
