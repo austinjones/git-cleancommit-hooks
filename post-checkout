@@ -50,9 +50,10 @@ if [[ ! -z "${branches}" ]]; then
   echo ""
   if [[ $REPLY  =~ ^[Yy]$ ]]; then
     echo -e "${branches}" | while read branchLine; do
-      reason=$(echo "${branchLine}" | tr -s ' ' | cut -f 1)
-      branch=$(echo "${branchLine}" | tr -s ' ' | cut -f 2)
-      echo -e "`date -u +\"%Y-%m-%dT%H:%M:%S%z\"`\t${reason}\t${branch}" >> $log_file
+      reason=$(echo "${branchLine}" | tr -s ' ' | cut -d ' ' -f 1)
+      commit=$(echo "${branchLine}" | tr -s ' ' | cut -d ' ' -f 2)
+      branch=$(echo "${branchLine}" | tr -s ' ' | cut -d ' ' -f 3)
+      echo -e "`date -u +\"%Y-%m-%dT%H:%M:%S%z\"`\t${reason}\t${commit}\t${branch}" >> $log_file
       esc=$(printf '\033')
       git branch --delete --force "${branch}" | sed "s/^/${esc}[0;34m[git-autobranch]${esc}[0m /;"
     done
