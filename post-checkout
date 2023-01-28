@@ -26,7 +26,7 @@ branches=$(git for-each-ref refs/heads/ "--format=%(refname:short)" | while read
     fi
 
     if [[ $(git log --pretty=oneline --since "6 weeks ago" $branch | wc -l) -eq 0 ]]; then
-      echo -e "${autobranch} stale $commit\t$branch"
+      echo -e "${autobranch}     stale $commit\t$branch"
       continue;
     fi
 
@@ -48,7 +48,7 @@ if [[ ! -z "${branches}" ]]; then
   echo ""
   if [[ $REPLY  =~ ^[Yy]$ ]]; then
     echo -e "${branches}" | while read branchLine; do
-      echo "`date -u +\"%Y-%m-%dT%H:%M:%S%z\"`\t${branchLine}" >> $log_file
+      echo "`date -u +\"%Y-%m-%dT%H:%M:%S%z\"`  ${branchLine}" >> $log_file
       branch=$(echo "${branchLine}" | cut -f 2)
       esc=$(printf '\033')
       git branch --delete --force "${branch}" | sed "s/^/${esc}[0;34m[git-autobranch]${esc}[0m /;"
