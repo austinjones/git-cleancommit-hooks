@@ -1,0 +1,39 @@
+#!/bin/bash
+
+if [[ ! -d "$1" ]]; then
+    echo "USAGE: deploy <base_dir> <hook>"
+fi
+
+if [[ ! -f "$2" ]]; then
+    echo "USAGE: deploy <base_dir> <hook>"
+fi
+
+basedir=$1
+hook=$2
+esc=$(printf '\033')
+
+echo "Deploying $hook to $basedir"
+echo ""
+
+for dir in $(find "$basedir" -maxdepth 1 -type d); do
+    if [[ -d "$dir/.git" ]]; then
+        target="$dir/.git/hooks/$hook"
+        targetDir="$dir/.git/hooks/"
+
+        if [[ ! -d "$targetDir" ]]; then
+            mkdir -p "$targetDir"
+        fi
+
+        if [[ -f "$target" ]]; then
+            if cmp --silent "$hook" "$target"; then
+                echo "${esc}[0;32m[ok]${esc}[0m $dir/.git/hooks/$hook"
+            else 
+                echo "${esc}[0;34m[updated]${esc}[0m $dir/.git/hooks/$hook"
+                cp -f "$hook" "$target"
+            fi
+        else
+            echo "${esc}[0;35m[created]${esc}[0m $dir/.git/hooks/$hook"
+            cp "$hook" "$targetDir"
+        fi
+    fi
+done

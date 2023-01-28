@@ -1,7 +1,7 @@
 #!/bin/bash
 # Removes any local branches which have been merged or cherry-picked to master
 # Local branches with unmerged commits are not removed
-
+set -x 
 autobranch="\033[0;34m[git-autobranch]\033[0m"
 if [ `git branch --remote --list origin/develop` ]; then
   base='develop'
@@ -12,6 +12,9 @@ else
 fi
 
 current_branch=$(git rev-parse --abbrev-ref HEAD);
+log_file="`git rev-parse --show-toplevel`/.autobranch-log"
+
+
 branches=$(git for-each-ref refs/heads/ "--format=%(refname:short)" | while read branch; do
     if [[ "$branch" == "master" ]] || [[ "$branch" == "main" ]] || [[ "$branch" == "develop" ]] || [[ "$branch" == "$current_branch" ]]; then
       continue;
@@ -20,6 +23,11 @@ branches=$(git for-each-ref refs/heads/ "--format=%(refname:short)" | while read
     commit=$(git rev-parse --short $branch)
     if [[ $(git merge-base $base $branch) == $(git rev-parse $branch) ]]; then
       echo -e "${autobranch}   merged $commit\t$branch"
+      continue;
+    fi
+
+    if [[ $(git log --pretty=oneline --since "6 weeks ago" $branch | wc -l) -eq 0 ]]; then
+      echo -e "${autobranch} stale $commit\t$branch"
       continue;
     fi
 
@@ -41,6 +49,7 @@ if [[ ! -z "${branches}" ]]; then
   echo ""
   if [[ $REPLY  =~ ^[Yy]$ ]]; then
     echo -e "${branches}" | while read branchLine; do
+      echo "`date -u +'%Y-%m-%dT%H:%M:%S%z'\t${branchLine}`" >> $log_file
       branch=$(echo "${branchLine}" | cut -f 2)
       esc=$(printf '\033')
       git branch --delete --force "${branch}" | sed "s/^/${esc}[0;34m[git-autobranch]${esc}[0m /;"
